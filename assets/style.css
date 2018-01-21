@@ -1,0 +1,242 @@
+body {
+	font-family: Roboto;
+	color: #333;
+	background: url('https://convergentmediahh.files.wordpress.com/2013/03/screen-shot-2013-03-25-at-03-56-27.png') no-repeat;
+	background-size: cover;
+	display: flex;
+	flex-flow: row wrap;
+	margin: 0;
+	padding: 0;
+}
+
+#top {
+	background: rgba(221,221,221,.7);
+	border-bottom: 1px solid #999;
+	flex-basis: 1 100%;
+	display: flex;
+	flex-flow: row wrap;
+	justify-content: space-between;
+	width: 100%;
+	padding: 0px 10px;
+	margin: 0px 0px 10px 0px;
+	box-sizing: border-box;
+}
+
+h1 {
+	color: #333;
+	font-size: 180%;
+	font-weight: normal;
+	line-height: 100%;
+}
+
+ul#active-users {
+	list-style-type: none;
+	padding: 0px;
+	margin: 0px;
+	align-self: center;
+	display: flex;
+}
+
+.user-name {
+	border-radius: 4px;
+	padding: 4px 8px;
+	margin: 0px 0px 0px 8px;
+}
+
+.team-0, .red {
+	color: #933;
+	background: #fcc;
+	border: 1px solid #933;
+}
+
+.team-1, .blue {
+	color: #339;
+	background: #ccf;
+	border: 1px solid #339;
+}
+
+.black {
+	color: #eee;
+	background: #222;
+	border: 1px solid #000;
+}
+
+.neut {
+	color: #595745;
+	background: #e5e1b7;
+	border: 1px solid #595745;
+}
+
+
+.fa-circle {
+	animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+	0% {
+		color: #0c0;
+	}
+	50% {
+		color: #080;
+	}
+	100% {
+		color: #0c0;
+	}
+}
+
+#register-form, #game, #chat {
+	padding: 20px 20px;
+	border-radius: 4px;
+	border: 1px solid #999;
+	background: rgba(221,221,221,.7);
+	display: flex;
+	flex-flow: row wrap;
+}
+
+#register-form {
+	margin: 50px auto;
+}
+
+#user-name-input, #send-user-name, #register-form p {
+	flex-basis: 100%;
+	border-radius: 4px;
+	padding: 8px 16px;
+	border: 1px solid #333;
+	font-family: Roboto;
+	font-size: 120%;
+	color: #333;
+}
+
+#send-user-name {
+	background: #ddd;
+	font-weight: bold;
+	cursor: pointer;
+}
+
+#game, #chat {
+	margin: 10px;
+	display: none;
+}
+
+#game {
+	flex-grow: 3;
+}
+
+#chat {
+	flex-grow: 1;
+	min-width: 400px;
+	flex-flow: column wrap;
+	box-sizing: border-box;
+}
+
+#messages {
+	list-style-type: none;
+	padding: 0px;
+	height: 500px;
+	overflow: auto;
+	display: flex;
+	flex-flow: column;
+}
+
+#messages li {
+	color: #333;
+	background: #ccc;
+	margin: 0px 0px 8px 0px;
+	border-radius: 4px;
+	padding: 8px;
+	display: inline-table;
+	max-width: 300px;
+}
+
+#messages li strong {
+    margin: 0px 4px 0px 0px;
+}
+
+#messages li strong.team-0 {
+	color: #933;
+	background: transparent;
+	border: 0px solid transparent;
+}
+
+#messages li strong.team-1 {
+	color: #339;
+	background: transparent;
+	border: 0px solid transparent;
+}
+
+#messages li em {
+	color: #999;
+}
+
+#chat-field {
+	display: flex;
+	flex-flow: nowrap;
+	align-content: stretch;
+}
+
+#chat-message {
+	width: 100%;
+	border-radius: 4px;
+	padding: 8px;
+	border: 1px solid #999;
+	font-family: Roboto;
+	font-size: 100%;
+	background: rgba(221,221,221,.7);
+	margin: 0px 4px 0px 0px;
+}
+
+#chat-field button {
+	font-family: Roboto;
+	border-radius: 4px;
+	border: 1px solid #999;
+	padding: 0px 20px;
+	background: rgba(255,255,255,.9);
+	color: #666;
+	cursor: pointer;
+}
+
+h2 {
+    width: 100%;
+    text-align: center;
+    font-weight: normal;
+}
+
+table {
+	display: none;
+	width: 100%;
+	border-spacing: 10px;
+	border-radius: 4px;
+	background: rgba(221,221,221,.7);
+}
+
+tr {
+	width: 100%;
+}
+
+td {
+	text-align: center;
+	padding: 30px;
+	border: 1px solid #999;
+	width: 20%;
+	font-size: 150%;
+	font-weight: normal;
+	background: rgba(221,221,221,.7);
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+#controls {
+	display: none;
+	flex-flow: nowrap;
+	align-content: stretch;	
+}
+
+#become-spymaster {
+	font-family: Roboto;
+	border-radius: 4px;
+	border: 1px solid #999;
+	padding: 0px 20px;
+	background: rgba(255,255,255,.9);
+	color: #666;
+	cursor: pointer;
+}

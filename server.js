@@ -1,108 +1,159 @@
-//  OpenShift sample Node application
-var express = require('express'),
-    app     = express(),
-    morgan  = require('morgan');
-    
-Object.assign=require('object-assign')
+var app = require('express')();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+var spymasterRed = false;
+var spymasterBlue = false;
+var room = {};
+var users = 0;
+var usersRed = 0;
+var usersBlue = 0;
+var cards = ["Brücke", "Himalaya", "Taucher", "Hochhaus", "Erdbeere",
+			"Anzug", "Whiskey", "Millionär", "Flugzeug", "Atlas",
+			"Saturn", "Katze", "Elefant", "Liebe", "Amsterdam",
+			"Magazin", "Zeit", "Sofa", "Computer", "Gabel",
+			"Verlag", "Island", "Gitarre", "Mittelmeer", "Ausgang"];
+var colors = ["red","red","red","red","red",
+				"red","red","red","red","blue",
+				"blue","blue","blue","blue","blue",
+				"blue","blue",'neut','neut','neut',
+				'neut','neut','neut','neut','black'];
+var shuffledColors = shuffle(colors);
+var pattern = listToMatrix(shuffledColors,5);
 
-app.engine('html', require('ejs').renderFile);
-app.use(morgan('combined'))
+//app.use(app.static('assets'));
 
-var port = process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080,
-    ip   = process.env.IP   || process.env.OPENSHIFT_NODEJS_IP || '0.0.0.0',
-    mongoURL = process.env.OPENSHIFT_MONGODB_DB_URL || process.env.MONGO_URL,
-    mongoURLLabel = "";
+app.get('/', function(req, res){
+	res.sendFile(__dirname + '/index.html');
+});
 
-if (mongoURL == null && process.env.DATABASE_SERVICE_NAME) {
-  var mongoServiceName = process.env.DATABASE_SERVICE_NAME.toUpperCase(),
-      mongoHost = process.env[mongoServiceName + '_SERVICE_HOST'],
-      mongoPort = process.env[mongoServiceName + '_SERVICE_PORT'],
-      mongoDatabase = process.env[mongoServiceName + '_DATABASE'],
-      mongoPassword = process.env[mongoServiceName + '_PASSWORD']
-      mongoUser = process.env[mongoServiceName + '_USER'];
+app.get('/style/', function(req, res){
+	res.sendFile(__dirname + '/assets/style.css');
+});
 
-  if (mongoHost && mongoPort && mongoDatabase) {
-    mongoURLLabel = mongoURL = 'mongodb://';
-    if (mongoUser && mongoPassword) {
-      mongoURL += mongoUser + ':' + mongoPassword + '@';
+io.on('connection', function(socket){
+	
+	socket.on('disconnect', function(){
+		users--;
+		io.emit('user left',socket.id);
+		if(room[socket.id].team == 0) {usersRed--;} else {usersBlue--;}
+		console.log(users + ' ' + usersRed + ' ' + usersBlue);
+		if(users < 4 && usersRed < 2 || usersBlue < 2) {
+			io.emit('interrupt game','');
+		}
+		var message = {};
+		message.author = room[socket.id].name;
+		message.team = room[socket.id].team;
+		message.content = '<em>left the game</em>';
+		io.emit('chat message', message);
+		delete room[socket.id];
+	});
+	
+	socket.on('user registration', function(msg){
+		users++;
+		var user = {};
+		user.id = socket.id;
+		user.name = msg.name;
+		user.team = msg.team;
+		if(user.team == 0) {usersRed++;} else {usersBlue++;}
+		room[socket.id] = user;	
+		io.emit('user joined',user);
+		console.log(room);
+		for(var personId in room) {
+			if(room[personId].id !== socket.id) {
+				io.to(socket.id).emit('user joined',room[personId]);
+			}
+		}
+		var message = {};
+		message.author = user.name;
+		message.team = user.team;
+		if(user.team == 0) {var teamName = 'Team Red';} else {var teamName = 'Team Blue';}
+		message.content = '<em>joined for ' + teamName + '</em>';
+		io.emit('chat message', message);
+		console.log('--- Setting spymaster button for ' + socket.id + ' to ' + room[socket.id].team);
+		io.to(socket.id).emit('set spymaster button team',room[socket.id].team);
+		if(users >= 4 && usersRed >= 2 && usersBlue >= 2) {
+			io.emit('start game','');
+		}
+	});
+	
+	socket.on('check card',function(msg) {
+		console.log('checking ' + msg);
+		var position = msg.split("-");
+		var cardInfo = {};
+		cardInfo.yPos = position[1];
+		cardInfo.xPos = position[2];
+		cardInfo.color = pattern[position[1]][position[2]];
+		console.log(cardInfo);
+		io.emit('reveal card',cardInfo);
+	});
+	
+	socket.on('chat message',function(msg) {
+		var message = {};
+		message.content = msg;
+		message.author = room[socket.id].name;
+		message.team = room[socket.id].team;
+		console.log(message);
+		io.emit('chat message', message);
+	});
+	
+	socket.on('become spymaster',function(msg) {
+		console.log(room[socket.id].name + ' wants to be spymaster');
+		if(room[socket.id].team == 0 && !spymasterRed 
+		|| room[socket.id].team == 1 && !spymasterBlue) {
+			if(room[socket.id].team == 0) {spymasterRed = true;} else {spymasterBlue = true;}
+			io.emit('become spymaster',room[socket.id].team);
+			var message = {};
+			message.author = room[socket.id].name;
+			message.team = room[socket.id].team;
+			if(room[socket.id].team == 0) {var teamName = 'Team Red';} else {var teamName = 'Team Blue';}
+			message.content = '<em>became spymaster for ' + teamName + '</em>';
+			io.emit('chat message', message);
+			
+			for(var i = 0; i <= 4; i++) {
+				for(var j = 0; j <= 4; j++) {
+					var cardInfo = {};
+					cardInfo.yPos = i;
+					cardInfo.xPos = j;
+					cardInfo.color = pattern[i][j];
+					console.log(cardInfo);
+					io.to(socket.id).emit('reveal card',cardInfo);
+				}
+			}
+			
+			console.log('--- granted');
+		} else {
+			console.log('--- refused');
+		}
+	});
+});
+
+http.listen(3000, function(){
+  console.log('listening on *:3000');
+});
+
+function shuffle(a) {
+    var j, x, i;
+    for (i = a.length - 1; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        x = a[i];
+        a[i] = a[j];
+        a[j] = x;
     }
-    // Provide UI label that excludes user id and pw
-    mongoURLLabel += mongoHost + ':' + mongoPort + '/' + mongoDatabase;
-    mongoURL += mongoHost + ':' +  mongoPort + '/' + mongoDatabase;
-
-  }
+	
+	return a;
 }
-var db = null,
-    dbDetails = new Object();
 
-var initDb = function(callback) {
-  if (mongoURL == null) return;
+function listToMatrix(list, elementsPerSubArray) {
+    var matrix = [], i, k;
 
-  var mongodb = require('mongodb');
-  if (mongodb == null) return;
+    for (i = 0, k = -1; i < list.length; i++) {
+        if (i % elementsPerSubArray === 0) {
+            k++;
+            matrix[k] = [];
+        }
 
-  mongodb.connect(mongoURL, function(err, conn) {
-    if (err) {
-      callback(err);
-      return;
+        matrix[k].push(list[i]);
     }
 
-    db = conn;
-    dbDetails.databaseName = db.databaseName;
-    dbDetails.url = mongoURLLabel;
-    dbDetails.type = 'MongoDB';
-
-    console.log('Connected to MongoDB at: %s', mongoURL);
-  });
-};
-
-app.get('/', function (req, res) {
-  // try to initialize the db on every request if it's not already
-  // initialized.
-  if (!db) {
-    initDb(function(err){});
-  }
-  if (db) {
-    var col = db.collection('counts');
-    // Create a document with request IP and current time of request
-    col.insert({ip: req.ip, date: Date.now()});
-    col.count(function(err, count){
-      if (err) {
-        console.log('Error running count. Message:\n'+err);
-      }
-      res.render('index.html', { pageCountMessage : count, dbInfo: dbDetails });
-    });
-  } else {
-    res.render('index.html', { pageCountMessage : null});
-  }
-});
-
-app.get('/pagecount', function (req, res) {
-  // try to initialize the db on every request if it's not already
-  // initialized.
-  if (!db) {
-    initDb(function(err){});
-  }
-  if (db) {
-    db.collection('counts').count(function(err, count ){
-      res.send('{ pageCount: ' + count + '}');
-    });
-  } else {
-    res.send('{ pageCount: -1 }');
-  }
-});
-
-// error handling
-app.use(function(err, req, res, next){
-  console.error(err.stack);
-  res.status(500).send('Something bad happened!');
-});
-
-initDb(function(err){
-  console.log('Error connecting to Mongo. Message:\n'+err);
-});
-
-app.listen(port, ip);
-console.log('Server running on http://%s:%s', ip, port);
-
-module.exports = app ;
+    return matrix;
+}

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="de">
+  <head>
+	<title>Codenames Online</title>
+	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" type="text/css" href="http://127.0.0.1:3000/style/" />
+    <meta charset="utf-8">
+  </head>
+
+  <body>
+	<div id="top">
+		<h1>Codenames Online</h1>
+		<ul id="active-users">
+		</ul>
+	</div>
+	
+	<div id="register-form">
+		<input type="text" id="user-name-input" placeholder="Spielername">
+		<p><input type="radio" name="team" value="0"> Red Team<br>
+		   <input type="radio" name="team" value="1"> Blue Team</p>
+		<button id="send-user-name" type="button">Join</button>
+	</div>
+	<div id="game">
+		<h2>Waiting for players (min. 2 players per team)</h2>
+		<table>
+			<tr>
+				<td id='field-0-0'>Brücke</td>
+				<td id='field-0-1'>Himalaya</td>
+				<td id='field-0-2'>Taucher</td>
+				<td id='field-0-3'>Hochhaus</td>
+				<td id='field-0-4'>Erdbeere</td>
+			</tr>
+			<tr>
+				<td id='field-1-0'>Anzug</td>
+				<td id='field-1-1'>Whiskey</td>
+				<td id='field-1-2'>Millionär</td>
+				<td id='field-1-3'>Flugzeug</td>
+				<td id='field-1-4'>Atlas</td>
+			</tr>
+			<tr>
+				<td id='field-2-0'>Saturn</td>
+				<td id='field-2-1'>Katze</td>
+				<td id='field-2-2'>Elefant</td>
+				<td id='field-2-3'>Liebe</td>
+				<td id='field-2-4'>Amsterdam</td>
+			</tr>
+			<tr>
+				<td id='field-3-0'>Magazin</td>
+				<td id='field-3-1'>Zeit</td>
+				<td id='field-3-2'>Sofa</td>
+				<td id='field-3-3'>Computer</td>
+				<td id='field-3-4'>Gabel</td>
+			</tr>
+			<tr>
+				<td id='field-4-0'>Verlag</td>
+				<td id='field-4-1'>Island</td>
+				<td id='field-4-2'>Gitarre</td>
+				<td id='field-4-3'>Mittelmeer</td>
+				<td id='field-4-4'>Ausgang</td>
+			</tr>
+		</table>
+		<div id="controls">
+			<button id="become-spymaster">I want to be Spymaster</button>
+		</div>
+	</div>
+	<div id="chat">
+		<ul id="messages">
+		</ul>
+		<form id="chat-field">
+			<input type="text" id="chat-message" placeholder="Send a message...">
+			<button>Send</button>
+		</form>
+	</div>
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+	<script>
+		$(function () {
+			$('#user-name-input').focus();
+			$('#send-user-name').click(function() {
+				var socket = io();
+				var userInfo = {};
+				
+				userInfo.name = $('#user-name-input').val();
+				userInfo.team = $('input[name="team"]:checked').val();
+				socket.emit('user registration',userInfo);
+				$('#register-form').css('display','none');
+				$('#game').css('display','flex');
+				$('#chat').css('display','flex');
+				
+				$('#chat-message').focus();
+				
+				// new user joins, his name is added as a list item
+				socket.on('user joined', function(msg){
+					$('#active-users').append($('<li id="userid-' + msg.id + '">').html('<li><span class="user-name team-'+ msg.team +'"><span class="fa fa-circle"></span> ' + msg.name + '</span>'));
+				});
+				
+				// user leaves, his name is removed from the list via id
+				socket.on('user left', function(msg){
+					$('#userid-' + msg).remove();
+				});
+				
+				// when a table cell is clicked, send its id
+				$('td').click(function() {
+					socket.emit('check card', $(this).attr('id'));
+				});
+				
+				// servers responds to check card
+				socket.on('reveal card', function(msg){
+					$('#field-'+msg.yPos+'-'+msg.xPos).addClass(msg.color);
+				});
+				
+				// chat messaging
+				$('#chat-field').submit(function(){
+					socket.emit('chat message', $('#chat-message').val());
+					$('#chat-message').val('');
+					return false;
+				});
+				socket.on('chat message', function(msg){
+					$('#messages').append($('<li>').html('<strong class="team-' + msg.team + '">' + msg.author + '</strong> ' + msg.content));
+					$('#messages').scrollTop($('#messages')[0].scrollHeight);
+				});
+				
+				// becoming spymaster
+				socket.on('set spymaster button team', function(msg) {
+					$('#become-spymaster').addClass('team-' + msg);
+				});
+				$('#become-spymaster').click(function() {
+					socket.emit('become spymaster', '');
+				});
+				socket.on('become spymaster', function(msg) {
+					$('button.team-' + msg).remove();
+				});
+				
+				// starting game 
+				socket.on('start game', function(msg) {
+					$('h2').css('display','none');
+					$('table').css('display','table');
+					$('#controls').css('display','flex');
+				});
+				
+				// interrupting game 
+				socket.on('interrupt game', function(msg) {
+					$('h2').css('display','block');
+					$('table').css('display','none');
+					$('#controls').css('display','none');
+				});
+			}); 
+		});
+	</script>
+  </body>
+</html>
