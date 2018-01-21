@@ -129,8 +129,12 @@ io.on('connection', function(socket){
 	});
 });
 
-app.listen(port, ip);
-console.log('Server running on http://%s:%s', ip, port);
+//app.listen(port, ip);
+//console.log('Server running on http://%s:%s', ip, port);
+
+http.listen(port, function(){
+  console.log('listening on *:' + port);
+});
 
 module.exports = app;
 
