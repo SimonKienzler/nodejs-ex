@@ -1,3 +1,5 @@
+var port = process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080;
+var ip = process.env.IP || process.env.OPENSHIFT_NODEJS_IP || '0.0.0.0';
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
@@ -127,9 +129,10 @@ io.on('connection', function(socket){
 	});
 });
 
-http.listen(3000, function(){
-  console.log('listening on *:3000');
-});
+app.listen(port, ip);
+console.log('Server running on http://%s:%s', ip, port);
+
+module.exports = app;
 
 function shuffle(a) {
     var j, x, i;
